@@ -1,7 +1,11 @@
-const router = require("express").Router();
+// routes/auth.js
+const User = require("../models/User");
 const bcrypt = require("bcrypt");
-const User = require("./models/User"); // adjust path
+const jwt = require("jsonwebtoken");
 
+// routes/posts.js
+const Post = require("../models/Post");
+const router = require("express").Router();
 // REGISTER
 router.post("/register", async (req, res) => {
   const { username, email, password } = req.body;
