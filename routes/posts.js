@@ -1,25 +1,55 @@
-const router = require("express").Router();
-const Post = require("../models/Post");
+// routes/posts.js
+import express from "express";
+import Post from "../models/Post.js";
 
-// get all posts
-router.get("/", async (req, res) => {
-  try {
-    const posts = await Post.find();
-    res.status(200).json(posts);
-  } catch (err) {
-    res.status(500).json(err);
-  }
-});
+const router = express.Router();
 
-// create post
+// Create a post
 router.post("/", async (req, res) => {
   try {
-    const newPost = new Post(req.body);
-    const saved = await newPost.save();
-    res.status(201).json(saved);
+    const { content, userId, username, email } = req.body;
+
+    const post = await Post.create({
+      content,
+      userId,
+      username,
+      email
+    });
+
+    res.status(201).json(post);
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({
+      message: "Failed to create post",
+      error: err.message
+    });
   }
 });
 
-module.exports = router;
+// Get all posts
+router.get("/", async (req, res) => {
+  try {
+    const posts = await Post.find().populate("createdBy", "username email");
+    res.status(200).json(posts);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch posts", error: err.message });
+  }
+});
+
+// Like a post
+router.post("/like/:id", async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    if (!post.likedBy.includes(userId)) post.likedBy.push(userId);
+    else post.likedBy = post.likedBy.filter(id => id !== userId);
+
+    await post.save();
+    res.status(200).json(post);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to like post", error: err.message });
+  }
+});
+
+export default router;

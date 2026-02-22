@@ -1,25 +1,24 @@
 // routes/auth.js
-const User = require("../models/User");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
+import express from "express";
+import User from "../models/User.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
-// routes/posts.js
-const Post = require("../models/Post");
-const router = require("express").Router();
+const router = express.Router();
+
 // REGISTER
 router.post("/register", async (req, res) => {
   const { username, email, password } = req.body;
 
-  // Gmail-only check
   if (!email.toLowerCase().endsWith("@gmail.com")) {
     return res.status(400).json({ message: "Only Gmail accounts are allowed" });
   }
+
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: "User exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
 
@@ -34,7 +33,6 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  // Gmail-only check
   if (!email.toLowerCase().endsWith("@gmail.com")) {
     return res.status(400).json({ message: "Only Gmail accounts are allowed" });
   }
@@ -53,5 +51,5 @@ router.post("/login", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router; // ✅ ES Modules default export
 
