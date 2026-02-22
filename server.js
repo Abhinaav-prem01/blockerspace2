@@ -12,8 +12,15 @@ import postsRoute from "./routes/posts.js";
 dotenv.config();
 
 const app = express();
-app.use(cors());
 app.use(bodyParser.json());
+app.use(cors({
+  origin: [
+    "https://blockerspace.com",
+    "http://localhost:5173"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
 
 // Use routes
 app.use("/api/auth", authRoute);
