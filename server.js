@@ -1,18 +1,20 @@
 import express from "express";
 import cors from "cors";
-import bodyParser from "body-parser";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
-// Import routes (CommonJS requires .js, but we are using ES Modules)
 import authRoute from "./routes/auth.js";
 import postsRoute from "./routes/posts.js";
 
 dotenv.config();
 
-const app = express();
-app.use(bodyParser.json());
+const app = express(); // ✅ DEFINE FIRST
+
+// 🔥 Middleware
+app.use(express.json());
+app.use("/api/posts", checkJwt, postRoutes);
+
 app.use(cors({
   origin: [
     "https://blockerspace.com",
@@ -22,31 +24,30 @@ app.use(cors({
   credentials: true
 }));
 
-// Use routes
+// 🔥 Routes
 app.use("/api/auth", authRoute);
 app.use("/api/posts", postsRoute);
 
-// Temporary in-memory storage for OTPs (use DB in production)
+// 🔥 Temporary OTP storage
 const otps = {};
 
 function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Email sender setup
+// 🔥 Email transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER, // your Gmail
-    pass: process.env.EMAIL_PASS, // app password recommended
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
-// Send OTP route
+// 🔥 Send OTP
 app.post("/send-otp", async (req, res) => {
   const { email } = req.body;
 
-  // Only Gmail addresses allowed
   if (!email.endsWith("@gmail.com")) {
     return res.status(400).json({ error: "Only Gmail addresses allowed" });
   }
@@ -61,6 +62,7 @@ app.post("/send-otp", async (req, res) => {
       subject: "Your OTP Code",
       text: `Your OTP code is ${otp}. It expires in 5 minutes.`,
     });
+
     res.json({ message: "OTP sent" });
   } catch (err) {
     console.error(err);
@@ -68,22 +70,24 @@ app.post("/send-otp", async (req, res) => {
   }
 });
 
-// Verify OTP route
+// 🔥 Verify OTP
 app.post("/verify-otp", (req, res) => {
   const { email, otp } = req.body;
+
   if (otps[email] === otp) {
-    delete otps[email]; // remove OTP after verification
+    delete otps[email];
     res.json({ message: "Verified successfully" });
   } else {
     res.status(400).json({ error: "Invalid OTP" });
   }
 });
 
-// Home route
+// 🔥 Home route
 app.get("/", (req, res) => res.send("Backend is running"));
 
-// MongoDB connection
+// 🔥 MongoDB connection
 const PORT = process.env.PORT || 5000;
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
@@ -91,4 +95,3 @@ mongoose
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => console.error("MongoDB connection error:", err));
-
